@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+          content="AlphaGrab - The ultimate destination for high-demand sports tickets in the UK, Europe, and worldwide. Find the best prices for top league matches.">
+    <meta name="theme-color" content="#0f172a">
+    <title>AlphaGrab.app | Premium Sport Tickets</title>
+
+    <!-- Google Fonts: Outfit for a modern, premium look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    <!-- Background Gradient/Noise Overlay -->
+    <div class="bg-noise"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-panel">
+      <div class="container nav-container">
+        <a href="#" class="logo">
+          <span class="logo-icon"><i class="fa-solid fa-ticket"></i></span>
+          AlphaGrab
+        </a>
+        <div class="nav-links">
+          <a href="#featured" class="active">Featured</a>
+          <a href="#live">Live Prices</a>
+          <a href="#support">Support</a>
+        </div>
+        <div class="nav-actions">
+          <button class="icon-btn" aria-label="Search"><i
+               class="fa-solid fa-search"></i></button>
+          <button class="icon-btn" aria-label="Cart"><i
+               class="fa-solid fa-shopping-bag"></i></button>
+          <button class="btn btn-primary">Sign In</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="featured" class="hero">
+      <div class="container hero-content">
+        <div class="hero-text">
+          <span class="badge badge-glow">New Season 2026</span>
+          <h1>Experience The <span class="text-gradient">Unforgettable</span>
+          </h1>
+          <p>Secure specific seats for the most high-demand matches in the
+            Premier League, Champions League, and World Cup events.</p>
+          <div class="hero-btns">
+            <button class="btn btn-primary btn-lg">Browse Tickets <i
+                 class="fa-solid fa-arrow-right"></i></button>
+            <button class="btn btn-secondary btn-lg">View Schedule</button>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-value">500+</span>
+              <span class="stat-label">Events</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">Guaranteed</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">24/7</span>
+              <span class="stat-label">Support</span>
+            </div>
+          </div>
+        </div>
+        <!-- Hero Card (Dynamic Featured Match) -->
+        <div class="hero-card-container">
+          <div class="glass-card hero-match-card" id="hero-match-card">
+            <!-- Injected via JS -->
+            <div class="loader"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container main-content-layout">
+      <section class="filters-section">
+        <div class="filters-header">
+          <h2>Explore Matches</h2>
+          <div class="view-toggles">
+            <button class="view-btn active" title="Grid View"><i
+                 class="fa-solid fa-grid-2"></i></button>
+            <button class="view-btn" title="List View"><i
+                 class="fa-solid fa-list"></i></button>
+          </div>
+        </div>
+
+        <div class="tabs-container">
+          <button class="tab-btn active" data-region="all">All Events</button>
+          <button class="tab-btn" data-region="uk">UK & England</button>
+          <button class="tab-btn" data-region="europe">Europe</button>
+          <button class="tab-btn" data-region="world">World</button>
+        </div>
+
+        <div class="search-sort-row">
+          <div class="input-group search-input">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="match-search"
+                   placeholder="Search team, league or stadium...">
+          </div>
+          <div class="custom-select">
+            <select id="sort-select">
+              <option value="date-asc">Date: Upcoming</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="popularity">Popularity</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Matches Grid -->
+      <section id="matches-grid" class="matches-grid">
+        <!-- Cards injected via JS -->
+        <!-- Placeholder for loading state -->
+        <div class="card-skeleton"></div>
+        <div class="card-skeleton"></div>
+        <div class="card-skeleton"></div>
+        <div class="card-skeleton"></div>
+      </section>
+
+      <!-- Market Pulse Section -->
+      <section class="market-pulse-section">
+        <div class="glass-panel pulse-container">
+          <div class="pulse-header">
+            <h2><i class="fa-solid fa-chart-line"></i> Market Intelligence</h2>
+            <p>Track price trends and compare across the world's most trusted
+              ticket exchanges.</p>
+          </div>
+
+          <div class="pulse-grid">
+            <!-- Price History Chart -->
+            <div class="pulse-card price-trends">
+              <h3>Average Price History (2025-2026)</h3>
+              <div class="chart-container">
+                <!-- Simple CSS Bar Chart for simulation -->
+                <div class="bar" style="height: 40%;" data-label="Sep">
+                  <span>£120</span></div>
+                <div class="bar" style="height: 55%;" data-label="Oct">
+                  <span>£145</span></div>
+                <div class="bar" style="height: 45%;" data-label="Nov">
+                  <span>£130</span></div>
+                <div class="bar" style="height: 70%;" data-label="Dec">
+                  <span>£180</span></div>
+                <div class="bar" style="height: 60%;" data-label="Jan">
+                  <span>£160</span></div>
+                <div class="bar active" style="height: 85%;" data-label="Feb">
+                  <span>£210</span></div>
+              </div>
+              <div class="trend-indicator">
+                <span class="trend-up"><i
+                     class="fa-solid fa-arrow-trend-up"></i> +14%</span> vs last
+                month
+              </div>
+            </div>
+
+            <!-- Trusted Platforms -->
+            <div class="pulse-card platforms-list">
+              <h3>Trusted Marketplaces</h3>
+              <div class="platforms-grid">
+                <a href="#" class="platform-item">
+                  <i class="fa-solid fa-ticket-simple"></i>
+                  <span>StubHub</span>
+                </a>
+                <a href="#" class="platform-item">
+                  <i class="fa-solid fa-store"></i>
+                  <span>Viagogo</span>
+                </a>
+                <a href="#" class="platform-item">
+                  <i class="fa-solid fa-barcode"></i>
+                  <span>Ticketmaster</span>
+                </a>
+                <a href="#" class="platform-item">
+                  <i class="fa-solid fa-couch"></i>
+                  <span>SeatGeek</span>
+                </a>
+              </div>
+              <div class="platform-note">
+                <p>*Prices verified across all major exchanges for authenticity.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container footer-content">
+        <div class="footer-col">
+          <h3>AlphaGrab</h3>
+          <p>Your trusted partner for premium sports experiences.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Regions</h4>
+          <ul class="footer-links">
+            <li><a href="#">UK & England</a></li>
+            <li><a href="#">Europe</a></li>
+            <li><a href="#">World</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul class="footer-links">
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Stay Updated</h4>
+          <div class="newsletter-form">
+            <input type="email" placeholder="Enter your email">
+            <button class="btn btn-primary"><i
+                 class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 AlphaGrab. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <!-- App JS -->
+    <script src="app.js"></script>
+  </body>
+
+</html>
