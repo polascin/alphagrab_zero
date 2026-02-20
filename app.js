@@ -453,8 +453,8 @@ function renderMatches() {
 
 // --- Supabase Authentication Logic ---
 
-const SUPABASE_URL = 'https://hqdfmmhktmfbchpmdliu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxZGZtbWhrdG1mYmNocG1kbGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzUxMTAsImV4cCI6MjA4NzExMTExMH0.1YQY15EF96_yuESyJinG8w6HKtAggJpsNBv0959TqdA';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Initialize the Supabase client
 const supabase = (typeof supabase !== 'undefined') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -618,6 +618,17 @@ async function handleSignOut(e) {
   if (dropdown) dropdown.classList.remove('active');
 }
 
+// Utility to escape HTML and prevent XSS
+function escapeHTML(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function updateAuthUI() {
   if (authState.user) {
     // User is logged in
@@ -625,11 +636,13 @@ function updateAuthUI() {
     navUserProfile.style.display = 'block';
 
     // Set Avatar text (first 2 letters of email)
-    const emailParts = authState.user.email.split('@')[0];
-    const avatarText = emailParts.substring(0, 2).toUpperCase();
+    const [localPart] = authState.user.email.split('@');
+    // Ensure we only use safe character length for textContent
+    const avatarText = escapeHTML(localPart.substring(0, 2).toUpperCase());
 
     userAvatar.textContent = avatarText;
-    userEmailDisplay.textContent = authState.user.email;
+    // textContent is inherently safer than innerHTML, but escaping adds defense-in-depth
+    userEmailDisplay.textContent = escapeHTML(authState.user.email);
   } else {
     // User is logged out
     navSigninBtn.style.display = 'block';

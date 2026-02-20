@@ -7,6 +7,13 @@
     <meta name="description"
           content="AlphaGrab - The ultimate destination for high-demand sports tickets in the UK, Europe, and worldwide. Find the best prices for top league matches.">
     <meta name="theme-color" content="#0f172a">
+
+    <!-- Security Headers (via Meta Tags) -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https://hqdfmmhktmfbchpmdliu.supabase.co;">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <!-- X-Content-Type-Options requires HTTP header, but CSP covers most of its intent here -->
+
     <title>AlphaGrab.app | Premium Sport Tickets</title>
 
     <!-- Google Fonts: Outfit for a modern, premium look -->
@@ -285,7 +292,7 @@
               <label for="signin-email">Email Address</label>
               <div class="input-with-icon">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="signin-email"
+                <input type="email" id="signin-email" autocomplete="email"
                        placeholder="you@example.com" required>
               </div>
             </div>
@@ -294,7 +301,8 @@
               <div class="input-with-icon">
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="signin-password"
-                       placeholder="••••••••" required>
+                       autocomplete="current-password" placeholder="••••••••"
+                       required>
               </div>
             </div>
             <div class="form-options">
@@ -327,7 +335,7 @@
               <label for="signup-email">Email Address</label>
               <div class="input-with-icon">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="email" id="signup-email"
+                <input type="email" id="signup-email" autocomplete="email"
                        placeholder="you@example.com" required>
               </div>
             </div>
@@ -336,6 +344,7 @@
               <div class="input-with-icon">
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="signup-password"
+                       autocomplete="new-password"
                        placeholder="Create a password (min 6 chars)" required
                        minlength="6">
               </div>
@@ -345,6 +354,7 @@
               <div class="input-with-icon">
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="signup-confirm"
+                       autocomplete="new-password"
                        placeholder="Confirm your password" required
                        minlength="6">
               </div>
@@ -365,7 +375,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App JS -->
-    <script src="app.js"></script>
+    <script type="module" src="/app.js"></script>
   </body>
 
 </html>
