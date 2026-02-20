@@ -164,9 +164,25 @@ const heroCardContainer = document.querySelector('.hero-card-container');
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
   init();
+  initAuth();
 });
 
 function init() {
+  // Initialize price history for all matches
+  matches.forEach(match => {
+    if (!match.priceHistory) {
+      // Setup some realistic initial randomized history for visual flair
+      const mockHistory = [];
+      let basePrice = match.price - (Math.floor(Math.random() * 20) - 10);
+      for (let i = 0; i < 9; i++) {
+        mockHistory.push(Math.max(20, basePrice));
+        basePrice += (Math.floor(Math.random() * 15) - 7);
+      }
+      mockHistory.push(match.price);
+      match.priceHistory = mockHistory;
+    }
+  });
+
   setupEventListeners();
   renderFeaturedMatch();
   renderMatches();
@@ -184,6 +200,12 @@ function simulateLivePrices() {
 
   if (newPrice !== match.price) {
     match.price = newPrice;
+    match.priceHistory.push(newPrice);
+
+    // Keep history reasonably sized (e.g., last 10 prices)
+    if (match.priceHistory.length > 10) {
+      match.priceHistory.shift();
+    }
 
     // If it's the featured match, re-render featured
     if (match.featured) {
@@ -274,6 +296,64 @@ function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
+// Data Processing
+function generateSparkline(history) {
+  if (!history || history.length < 2) {
+    return `
+      <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; opacity: 0.5;">
+          <span style="font-size: 0.75rem; color: var(--text-gray);"><i class="fa-solid fa-chart-line"></i> Price History collecting...</span>
+      </div>
+    `;
+  }
+
+  const width = 100;
+  const height = 30;
+  const max = Math.max(...history);
+  const min = Math.min(...history);
+  const range = max - min || 1;
+  const padding = 2;
+  const usableHeight = height - (padding * 2);
+  const step = width / (history.length - 1);
+
+  const points = history.map((price, i) => {
+    const x = i * step;
+    const y = height - padding - ((price - min) / range) * usableHeight;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const currentPrice = history[history.length - 1];
+  const oldPrice = history[history.length - 2];
+
+  const isUp = currentPrice > oldPrice;
+  const isDown = currentPrice < oldPrice;
+
+  let trendColor = 'var(--text-gray)';
+  let icon = 'fa-minus';
+
+  if (isUp) {
+    trendColor = 'var(--danger)'; // red means price increased
+    icon = 'fa-arrow-trend-up';
+  } else if (isDown) {
+    trendColor = 'var(--success)'; // green means price dropped
+    icon = 'fa-arrow-trend-down';
+  }
+
+  return `
+    <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span style="font-size: 0.75rem; color: var(--text-gray);"><i class="fa-solid fa-chart-line"></i> Price History</span>
+            <span style="font-size: 0.75rem; color: ${trendColor}; font-weight: bold;">
+                <i class="fa-solid ${icon}"></i>
+            </span>
+        </div>
+        <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow: visible; display: block; filter: drop-shadow(0 0 2px ${trendColor}80)">
+            <polyline fill="none" stroke="${trendColor}" stroke-width="2" points="${points}" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="${(history.length - 1) * step}" cy="${height - padding - ((currentPrice - min) / range) * usableHeight}" r="3" fill="${trendColor}" />
+        </svg>
+    </div>
+  `;
+}
+
 // Rendering
 function renderFeaturedMatch() {
   const featured = matches.find(m => m.featured) || matches[0];
@@ -304,7 +384,10 @@ function renderFeaturedMatch() {
 
             <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; text-align: center;">
                 <p style="margin-bottom: 5px; color: var(--text-gray);">Starting from</p> 
-                <h2 style="font-size: 2.5rem; color: var(--success); margin-bottom: 20px;">${featured.currency}${featured.price}</h2>
+                <h2 style="font-size: 2.5rem; color: var(--success); margin-bottom: 10px;">${featured.currency}${featured.price}</h2>
+                <div style="margin-bottom: 20px; text-align: left;">
+                    ${generateSparkline(featured.priceHistory)}
+                </div>
                 <button class="btn btn-primary" style="width: 100%;">Get Tickets Now</button>
             </div>
         </div>
@@ -355,14 +438,201 @@ function renderMatches() {
                        <i class="fa-solid fa-fire"></i> ${match.demand} Demand
                    </span>
                 </div>
-                <div class="price-tag">
+                <div class="price-tag" style="border-bottom: none; padding-bottom: 0;">
                     <span class="price-label">From</span>
                     <span class="price-value">${match.currency}${match.price}</span>
                 </div>
+                ${generateSparkline(match.priceHistory)}
                 <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;">View Seats</button>
             </div>
         `;
 
     matchesGrid.appendChild(card);
   });
+}
+
+// --- Supabase Authentication Logic ---
+
+const SUPABASE_URL = 'https://hqdfmmhktmfbchpmdliu.supabase.co';
+const SUPABASE_ANON_KEY = '***REMOVED***';
+
+// Initialize the Supabase client
+const supabase = (typeof supabase !== 'undefined') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const authState = {
+  user: null
+};
+
+// Elements
+const authModal = document.getElementById('auth-modal');
+const closeAuthModalBtn = document.getElementById('close-auth-modal');
+const navSigninBtn = document.getElementById('nav-signin-btn');
+const navUserProfile = document.getElementById('nav-user-profile');
+const userAvatar = document.getElementById('user-avatar');
+const userEmailDisplay = document.getElementById('user-email-display');
+const signOutBtn = document.getElementById('sign-out-btn');
+
+// Forms
+const signinFormContainer = document.getElementById('signin-form-container');
+const signupFormContainer = document.getElementById('signup-form-container');
+const showSignupBtn = document.getElementById('show-signup-btn');
+const showSigninBtn = document.getElementById('show-signin-btn');
+
+const signinForm = document.getElementById('signin-form');
+const signupForm = document.getElementById('signup-form');
+const signinError = document.getElementById('signin-error');
+const signupError = document.getElementById('signup-error');
+
+async function initAuth() {
+  if (!supabase) {
+    console.error("Supabase client not initialized. Ensure CDN is loaded and URL/Key are set.");
+    return;
+  }
+
+  // Get initial session
+  const { data: { session } } = await supabase.auth.getSession();
+  authState.user = session?.user || null;
+  updateAuthUI();
+
+  // Listen for auth changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    authState.user = session?.user || null;
+    updateAuthUI();
+  });
+
+  setupAuthEventListeners();
+}
+
+function setupAuthEventListeners() {
+  // Modal toggles
+  navSigninBtn.addEventListener('click', () => {
+    authModal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  });
+
+  closeAuthModalBtn.addEventListener('click', closeAuthModal);
+
+  // Close modal on outside click
+  authModal.addEventListener('click', (e) => {
+    if (e.target === authModal) {
+      closeAuthModal();
+    }
+  });
+
+  // Switch between Sign In / Sign Up
+  showSignupBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    signinFormContainer.style.display = 'none';
+    signupFormContainer.style.display = 'block';
+    clearAuthErrors();
+  });
+
+  showSigninBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupFormContainer.style.display = 'none';
+    signinFormContainer.style.display = 'block';
+    clearAuthErrors();
+  });
+
+  // Form Submissions
+  signupForm.addEventListener('submit', handleSignUp);
+  signinForm.addEventListener('submit', handleSignIn);
+  if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
+}
+
+function closeAuthModal() {
+  authModal.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => {
+    // Reset to sign in view after modal closes
+    signinFormContainer.style.display = 'block';
+    signupFormContainer.style.display = 'none';
+    clearAuthErrors();
+    if (signupForm) signupForm.reset();
+    if (signinForm) signinForm.reset();
+  }, 300);
+}
+
+function clearAuthErrors() {
+  signinError.textContent = '';
+  signupError.textContent = '';
+}
+
+async function handleSignUp(e) {
+  e.preventDefault();
+  clearAuthErrors();
+
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirmPassword = document.getElementById('signup-confirm').value;
+
+  if (password !== confirmPassword) {
+    signupError.textContent = "Passwords do not match.";
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+  });
+
+  if (error) {
+    signupError.textContent = error.message;
+  } else {
+    // Supabase auto-logins after signup iff email confirmations are disabled.
+    // Otherwise, we might need to tell them to check their email.
+    if (data.session) {
+      closeAuthModal();
+    } else {
+      signupError.textContent = "Please check your email to verify your account.";
+      signupError.style.color = "var(--success)";
+    }
+  }
+}
+
+async function handleSignIn(e) {
+  e.preventDefault();
+  clearAuthErrors();
+
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password,
+  });
+
+  if (error) {
+    signinError.textContent = error.message;
+  } else {
+    closeAuthModal();
+  }
+}
+
+async function handleSignOut(e) {
+  e.preventDefault();
+  await supabase.auth.signOut();
+
+  // Close dropdown if open
+  const dropdown = document.querySelector('.profile-dropdown');
+  if (dropdown) dropdown.classList.remove('active');
+}
+
+function updateAuthUI() {
+  if (authState.user) {
+    // User is logged in
+    navSigninBtn.style.display = 'none';
+    navUserProfile.style.display = 'block';
+
+    // Set Avatar text (first 2 letters of email)
+    const emailParts = authState.user.email.split('@')[0];
+    const avatarText = emailParts.substring(0, 2).toUpperCase();
+
+    userAvatar.textContent = avatarText;
+    userEmailDisplay.textContent = authState.user.email;
+  } else {
+    // User is logged out
+    navSigninBtn.style.display = 'block';
+    navUserProfile.style.display = 'none';
+  }
 }
