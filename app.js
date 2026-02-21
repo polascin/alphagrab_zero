@@ -453,11 +453,13 @@ function renderMatches() {
 
 // --- Supabase Authentication Logic ---
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY;
 
-// Initialize the Supabase client
-const supabase = (typeof supabase !== 'undefined') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// Initialize the Supabase client (guard against missing CDN/env)
+const supabase = (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 const authState = {
   user: null
@@ -485,7 +487,7 @@ const signupError = document.getElementById('signup-error');
 
 async function initAuth() {
   if (!supabase) {
-    console.error("Supabase client not initialized. Ensure CDN is loaded and URL/Key are set.");
+    console.error("Supabase client not initialized. Ensure the CDN is loaded and Vite env vars are set.");
     return;
   }
 
