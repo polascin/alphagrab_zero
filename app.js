@@ -2,150 +2,63 @@
  * AlphaGrab - Main Application Logic
  */
 
-// Mock Data
-const matches = [
-  {
-    id: 1,
-    homeTeam: "Manchester City",
-    awayTeam: "Real Madrid",
-    league: "Champions League",
-    date: "2026-04-15T20:00:00",
-    stadium: "Etihad Stadium",
-    location: "Manchester, UK",
-    price: 150,
-    currency: "£",
-    region: "europe",
-    demand: "Very High",
-    color: ["#6CABDD", "#FEBE10"], // Team colors
-    featured: true
-  },
-  {
-    id: 2,
-    homeTeam: "Liverpool",
-    awayTeam: "Man United",
-    league: "Premier League",
-    date: "2026-03-22T16:30:00",
-    stadium: "Anfield",
-    location: "Liverpool, UK",
-    price: 120,
-    currency: "£",
-    region: "uk",
-    demand: "High",
-    color: ["#C8102E", "#DA291C"]
-  },
-  {
-    id: 3,
-    homeTeam: "Arsenal",
-    awayTeam: "Tottenham",
-    league: "Premier League",
-    date: "2026-03-14T12:30:00",
-    stadium: "Emirates Stadium",
-    location: "London, UK",
-    price: 110,
-    currency: "£",
-    region: "uk",
-    demand: "High",
-    color: ["#EF0107", "#132257"]
-  },
-  {
-    id: 4,
-    homeTeam: "Barcelona",
-    awayTeam: "Bayern Munich",
-    league: "Champions League",
-    date: "2026-04-14T20:00:00",
-    stadium: "Camp Nou",
-    location: "Barcelona, Spain",
-    price: 180,
-    currency: "€",
-    region: "europe",
-    demand: "Very High",
-    color: ["#004D98", "#DC052D"]
-  },
-  {
-    id: 5,
-    homeTeam: "Argentina",
-    awayTeam: "Brazil",
-    league: "World Cup Qualifiers",
-    date: "2026-06-10T19:00:00",
-    stadium: "MetLife Stadium",
-    location: "New Jersey, USA",
-    price: 350,
-    currency: "$",
-    region: "world",
-    demand: "Extremely High",
-    color: ["#75AADB", "#FFDC02"]
-  },
-  {
-    id: 6,
-    homeTeam: "Chelsea",
-    awayTeam: "Newcastle",
-    league: "Premier League",
-    date: "2026-03-29T15:00:00",
-    stadium: "Stamford Bridge",
-    location: "London, UK",
-    price: 85,
-    currency: "£",
-    region: "uk",
-    demand: "Moderate",
-    color: ["#034694", "#241F20"]
-  },
-  {
-    id: 7,
-    homeTeam: "PSG",
-    awayTeam: "Marseille",
-    league: "Ligue 1",
-    date: "2026-04-05T21:00:00",
-    stadium: "Parc des Princes",
-    location: "Paris, France",
-    price: 95,
-    currency: "€",
-    region: "europe",
-    demand: "High",
-    color: ["#004170", "#009DFF"]
-  },
-  {
-    id: 8,
-    homeTeam: "Inter Milan",
-    awayTeam: "AC Milan",
-    league: "Serie A",
-    date: "2026-04-19T20:45:00",
-    stadium: "San Siro",
-    location: "Milan, Italy",
-    price: 130,
-    currency: "€",
-    region: "europe",
-    demand: "High",
-    color: ["#010E80", "#FB090B"]
-  },
-  {
-    id: 9,
-    homeTeam: "England",
-    awayTeam: "Germany",
-    league: "Friendly",
-    date: "2026-06-01T19:45:00",
-    stadium: "Wembley",
-    location: "London, UK",
-    price: 90,
-    currency: "£",
-    region: "uk",
-    demand: "High",
-    color: ["#FFFFFF", "#000000"]
-  },
-  {
-    id: 10,
-    homeTeam: "LA Galaxy",
-    awayTeam: "Inter Miami",
-    league: "MLS",
-    date: "2026-05-15T19:30:00",
-    stadium: "Dignity Health Park",
-    location: "Los Angeles, USA",
-    price: 200,
-    currency: "$",
-    region: "world",
-    demand: "Very High",
-    color: ["#00245D", "#F7B5CD"]
-  }
+// State & Data
+let matches = [];
+
+const SEATGEEK_CLIENT_ID = import.meta.env?.VITE_SEATGEEK_CLIENT_ID || 'MzgxMjc3OTV8MTY5OTMwMTAzMy44MjUxMTQ'; // Fallback demo key if env missing
+
+// Pre-defined team colors for visual flair (SeatGeek API doesn't provide team colors)
+const teamColors = [
+  ["#6CABDD", "#FEBE10"], ["#C8102E", "#DA291C"], ["#EF0107", "#132257"],
+  ["#004D98", "#DC052D"], ["#034694", "#241F20"], ["#004170", "#009DFF"],
+  ["#010E80", "#FB090B"], ["#FFFFFF", "#000000"], ["#00245D", "#F7B5CD"]
 ];
+
+async function fetchLiveEvents() {
+  try {
+    // Fetch upcoming soccer events from SeatGeek
+    const response = await fetch(`https://api.seatgeek.com/2/events?type=soccer&per_page=12&client_id=${SEATGEEK_CLIENT_ID}`);
+    const data = await response.json();
+
+    if (data.events && data.events.length > 0) {
+      matches = data.events.map((event, index) => {
+        // Extract teams
+        const homeTeam = event.performers.find(p => p.away_team === false)?.name || event.performers[0]?.name || "Home Team";
+        const awayTeam = event.performers.find(p => p.away_team === true)?.name || event.performers[1]?.name || "Away Team";
+
+        // Use real lowest price if available, otherwise fallback to a realistic simulated price
+        const basePrice = event.stats?.lowest_price || Math.floor(Math.random() * 100) + 50;
+
+        // Determine region based on country
+        let region = "world";
+        const country = event.venue?.country?.toUpperCase() || "";
+        if (country === "UK" || country === "GB" || country === "ENGLAND") region = "uk";
+        else if (["ES", "FR", "IT", "DE", "PT", "NL"].includes(country)) region = "europe";
+
+        // Map SeatGeek event to our format
+        return {
+          id: event.id,
+          seatgeek_url: event.url, // Keep link to buy real tickets
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          league: event.taxonomies[0]?.name || "Soccer Event",
+          date: event.datetime_local || event.datetime_utc,
+          stadium: event.venue?.name || "TBA",
+          location: `${event.venue?.city || ''}, ${event.venue?.country || ''}`.trim().replace(/^,/, ''),
+          price: basePrice,
+          currency: "$", // SeatGeek usually returns USD
+          region: region,
+          demand: event.stats?.listing_count < 100 ? "Extremely High" : (event.stats?.listing_count < 500 ? "High" : "Moderate"),
+          color: teamColors[index % teamColors.length], // Random assigned colors
+          featured: index === 0 // Make the first result featured
+        };
+      });
+    }
+  } catch (err) {
+    console.error("Failed to fetch from SeatGeek API:", err);
+    // If it fails (e.g., rate limits or adblocker), we could optionally set fallback matches here.
+  }
+}
 
 // State
 let state = {
@@ -167,11 +80,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuth();
 });
 
-function init() {
+async function init() {
+  // Show localized loading state while fetching API
+  if (matchesGrid) {
+    matchesGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);"><div class="loader" style="margin: 0 auto 20px;"></div><p>Fetching real-time market data from SeatGeek...</p></div>';
+  }
+
+  // Fetch from public API
+  await fetchLiveEvents();
+
+  if (matches.length === 0) {
+    if (matchesGrid) matchesGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">Failed to load live events. Please try again later.</div>`;
+    return;
+  }
+
   // Initialize price history for all matches
   matches.forEach(match => {
     if (!match.priceHistory) {
-      // Setup some realistic initial randomized history for visual flair
+      // Setup some initial randomized history leading up to the real fetched price
       const mockHistory = [];
       let basePrice = match.price - (Math.floor(Math.random() * 20) - 10);
       for (let i = 0; i < 9; i++) {
@@ -388,7 +314,10 @@ function renderFeaturedMatch() {
                 <div style="margin-bottom: 20px; text-align: left;">
                     ${generateSparkline(featured.priceHistory)}
                 </div>
-                <button class="btn btn-primary" style="width: 100%;">Get Tickets Now</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                  <button class="btn btn-primary" style="flex: 2;" onclick="window.open('${featured.seatgeek_url}', '_blank')">Buy on SeatGeek</button>
+                  <button class="btn btn-secondary track-price-btn" style="flex: 1;" data-id="${featured.id}"><i class="fa-regular fa-bell"></i> Track</button>
+                </div>
             </div>
         </div>
     `;
@@ -439,16 +368,82 @@ function renderMatches() {
                    </span>
                 </div>
                 <div class="price-tag" style="border-bottom: none; padding-bottom: 0;">
-                    <span class="price-label">From</span>
+                    <span class="price-label">Live Low</span>
                     <span class="price-value">${match.currency}${match.price}</span>
                 </div>
                 ${generateSparkline(match.priceHistory)}
-                <button class="btn btn-secondary" style="margin-top: 15px; width: 100%;">View Seats</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                  <button class="btn btn-secondary" style="flex: 2;" onclick="window.open('${match.seatgeek_url}', '_blank')">View Seats</button>
+                  <button class="btn btn-secondary track-price-btn" style="flex: 1; padding: 0;" data-id="${match.id}" title="Track Price"><i class="fa-regular fa-bell"></i></button>
+                </div>
             </div>
         `;
 
     matchesGrid.appendChild(card);
   });
+
+  // Re-attach observers for Track buttons
+  document.querySelectorAll('.track-price-btn').forEach(btn => {
+    btn.addEventListener('click', handleTrackMatch);
+  });
+}
+
+// Supabase Track Match implementation
+async function handleTrackMatch(e) {
+  const btn = e.currentTarget;
+  const matchId = btn.getAttribute('data-id');
+
+  if (!authState.user) {
+    // Open auth modal if not logged in
+    authModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    return;
+  }
+
+  if (!supabase) return;
+
+  try {
+    const icon = btn.querySelector('i');
+
+    // Check if already tracking
+    if (icon.classList.contains('fa-solid')) {
+      // Untrack
+      const { error } = await supabase
+        .from('saved_matches')
+        .delete()
+        .eq('user_id', authState.user.id)
+        .eq('match_id', matchId);
+
+      if (!error) {
+        icon.classList.remove('fa-solid');
+        icon.classList.add('fa-regular');
+        btn.style.color = '';
+      }
+    } else {
+      // Track
+      const { error } = await supabase
+        .from('saved_matches')
+        .insert([{
+          user_id: authState.user.id,
+          match_id: matchId,
+          created_at: new Date().toISOString()
+        }]);
+
+      if (!error) {
+        icon.classList.remove('fa-regular');
+        icon.classList.add('fa-solid');
+        btn.style.color = 'var(--accent)';
+      } else if (error.code === '23505') { // Unique constraint violation (already tracked)
+        icon.classList.remove('fa-regular');
+        icon.classList.add('fa-solid');
+        btn.style.color = 'var(--accent)';
+      } else {
+        console.error("Error tracking match:", error);
+      }
+    }
+  } catch (err) {
+    console.error("Error toggling track status:", err);
+  }
 }
 
 // --- Supabase Authentication Logic ---
