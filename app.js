@@ -488,6 +488,8 @@ const signupError = document.getElementById('signup-error');
 async function initAuth() {
   if (!supabase) {
     console.error("Supabase client not initialized. Ensure the CDN is loaded and Vite env vars are set.");
+    setupAuthEventListeners();
+    updateAuthUI();
     return;
   }
 
@@ -518,6 +520,23 @@ function setupAuthEventListeners() {
   authModal.addEventListener('click', (e) => {
     if (e.target === authModal) {
       closeAuthModal();
+    }
+  });
+
+  // User Profile Dropdown Toggle
+  userAvatar.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent clicking document from closing it immediately
+    const dropdown = document.querySelector('.profile-dropdown');
+    if (dropdown) dropdown.classList.toggle('active');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.querySelector('.profile-dropdown');
+    if (dropdown && dropdown.classList.contains('active')) {
+      if (!navUserProfile.contains(e.target)) {
+        dropdown.classList.remove('active');
+      }
     }
   });
 
@@ -558,11 +577,18 @@ function closeAuthModal() {
 function clearAuthErrors() {
   signinError.textContent = '';
   signupError.textContent = '';
+  signinError.style.color = '';
+  signupError.style.color = '';
 }
 
 async function handleSignUp(e) {
   e.preventDefault();
   clearAuthErrors();
+
+  if (!supabase) {
+    signupError.textContent = "Authentication service is unavailable.";
+    return;
+  }
 
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value;
@@ -596,6 +622,11 @@ async function handleSignIn(e) {
   e.preventDefault();
   clearAuthErrors();
 
+  if (!supabase) {
+    signinError.textContent = "Authentication service is unavailable.";
+    return;
+  }
+
   const email = document.getElementById('signin-email').value.trim();
   const password = document.getElementById('signin-password').value;
 
@@ -613,6 +644,7 @@ async function handleSignIn(e) {
 
 async function handleSignOut(e) {
   e.preventDefault();
+  if (!supabase) return;
   await supabase.auth.signOut();
 
   // Close dropdown if open

@@ -1,0 +1,31 @@
+# Robots.txt for AlphaGrab.app
+# Generated: 2026-02-23
+
+User-agent: *
+Allow: /
+
+# Allow search engines to crawl important directories
+Allow: /css/
+Allow: /js/
+Allow: /images/
+
+# Disallow crawling of admin or private areas
+Disallow: /admin/
+Disallow: /private/
+Disallow: /.env*
+
+# Allow all search engines to access sitemap
+Sitemap: https://alphagrab.app/sitemap.xml
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1
+
+# Specific instructions for major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /

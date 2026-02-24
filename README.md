@@ -19,6 +19,7 @@ Built with a focus on performance and modern design:
 ## 📦 How to Use
 
 ### Option A: Run with Vite (recommended for auth)
+
 1.  Clone or download the repository.
 2.  Install dependencies: `npm install`.
 3.  Create a `.env.local` file with:
@@ -28,6 +29,7 @@ Built with a focus on performance and modern design:
 5.  Open the local URL shown in the terminal.
 
 ### Option B: Open the HTML file (UI-only)
+
 1.  Clone or download the repository.
 2.  Open `index.html` in your preferred web browser.
 3.  Browse matches and watch prices change in real-time.
