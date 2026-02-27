@@ -53,10 +53,18 @@ async function fetchLiveEvents() {
           featured: index === 0 // Make the first result featured
         };
       });
+    } else {
+      throw new Error("No events found in response");
     }
   } catch (err) {
     console.error("Failed to fetch from SeatGeek API:", err);
-    // If it fails (e.g., rate limits or adblocker), we could optionally set fallback matches here.
+    // Fallback data if SeatGeek blocks the request (403 Forbidden / Rate Limit)
+    matches = [
+      { id: "fallback-1", seatgeek_url: "#", homeTeam: "Real Madrid", awayTeam: "Barcelona", league: "La Liga", date: "2026-04-15T20:00:00", stadium: "Santiago Bernabéu", location: "Madrid, Spain", price: 250, currency: "€", region: "europe", demand: "Extremely High", color: teamColors[0], featured: true },
+      { id: "fallback-2", seatgeek_url: "#", homeTeam: "Arsenal", awayTeam: "Chelsea", league: "Premier League", date: "2026-03-22T16:30:00", stadium: "Emirates Stadium", location: "London, UK", price: 150, currency: "£", region: "uk", demand: "High", color: teamColors[1] },
+      { id: "fallback-3", seatgeek_url: "#", homeTeam: "Inter Miami", awayTeam: "LA Galaxy", league: "MLS", date: "2026-05-10T19:00:00", stadium: "DRV PNK Stadium", location: "Miami, USA", price: 180, currency: "$", region: "world", demand: "Very High", color: teamColors[2] },
+      { id: "fallback-4", seatgeek_url: "#", homeTeam: "Bayern Munich", awayTeam: "Dortmund", league: "Bundesliga", date: "2026-04-05T18:30:00", stadium: "Allianz Arena", location: "Munich, Germany", price: 120, currency: "€", region: "europe", demand: "High", color: teamColors[3] }
+    ];
   }
 }
 
