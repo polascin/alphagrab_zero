@@ -5,7 +5,8 @@
 // State & Data
 let matches = [];
 
-const SEATGEEK_CLIENT_ID = import.meta.env?.VITE_SEATGEEK_CLIENT_ID || 'MzgxMjc3OTV8MTY5OTMwMTAzMy44MjUxMTQ'; // Fallback demo key if env missing
+const SEATGEEK_CLIENT_ID = import.meta.env?.VITE_SEATGEEK_CLIENT_ID || 'MzgxMjc3OTV8MTY5OTMwMTAzMy44MjUxMTQ'; // Fallback demo key
+const TICKETMASTER_API_KEY = import.meta.env?.VITE_TICKETMASTER_API_KEY || 'Ry6yY3JGb30rAYXwO2pCAlLGG9kOAsGZ'; // Fallback demo key
 
 // Pre-defined team colors for visual flair (SeatGeek API doesn't provide team colors)
 const teamColors = [
@@ -15,30 +16,28 @@ const teamColors = [
 ];
 
 async function fetchLiveEvents() {
-  try {
-    // Fetch upcoming soccer events from SeatGeek
-    const response = await fetch(`https://api.seatgeek.com/2/events?type=soccer&per_page=12&client_id=${SEATGEEK_CLIENT_ID}`);
-    const data = await response.json();
+  const allEvents = [];
 
-    if (data.events && data.events.length > 0) {
-      matches = data.events.map((event, index) => {
-        // Extract teams
+  // 1. Fetch from SeatGeek
+  try {
+    const sgResponse = await fetch(`https://api.seatgeek.com/2/events?type=soccer&per_page=6&client_id=${SEATGEEK_CLIENT_ID}`);
+    const sgData = await sgResponse.json();
+
+    if (sgData.events && sgData.events.length > 0) {
+      const sgEvents = sgData.events.map((event, index) => {
         const homeTeam = event.performers.find(p => p.away_team === false)?.name || event.performers[0]?.name || "Home Team";
         const awayTeam = event.performers.find(p => p.away_team === true)?.name || event.performers[1]?.name || "Away Team";
-
-        // Use real lowest price if available, otherwise fallback to a realistic simulated price
         const basePrice = event.stats?.lowest_price || Math.floor(Math.random() * 100) + 50;
 
-        // Determine region based on country
         let region = "world";
         const country = event.venue?.country?.toUpperCase() || "";
         if (country === "UK" || country === "GB" || country === "ENGLAND") region = "uk";
         else if (["ES", "FR", "IT", "DE", "PT", "NL"].includes(country)) region = "europe";
 
-        // Map SeatGeek event to our format
         return {
-          id: event.id,
-          seatgeek_url: event.url, // Keep link to buy real tickets
+          id: `sg_${event.id}`, // prefix to ensure global uniqueness
+          source: 'SeatGeek',
+          buy_url: event.url,
           homeTeam: homeTeam,
           awayTeam: awayTeam,
           league: event.taxonomies[0]?.name || "Soccer Event",
@@ -46,24 +45,81 @@ async function fetchLiveEvents() {
           stadium: event.venue?.name || "TBA",
           location: `${event.venue?.city || ''}, ${event.venue?.country || ''}`.trim().replace(/^,/, ''),
           price: basePrice,
-          currency: "$", // SeatGeek usually returns USD
+          currency: "$",
           region: region,
           demand: event.stats?.listing_count < 100 ? "Extremely High" : (event.stats?.listing_count < 500 ? "High" : "Moderate"),
-          color: teamColors[index % teamColors.length], // Random assigned colors
-          featured: index === 0 // Make the first result featured
+          color: teamColors[index % teamColors.length],
         };
       });
-    } else {
-      throw new Error("No events found in response");
+      allEvents.push(...sgEvents);
     }
   } catch (err) {
     console.error("Failed to fetch from SeatGeek API:", err);
-    // Fallback data if SeatGeek blocks the request (403 Forbidden / Rate Limit)
+  }
+
+  // 2. Fetch from Ticketmaster
+  try {
+    const tmResponse = await fetch(`https://app.ticketmaster.com/discovery/v2/events.json?classificationName=sports&sort=date,asc&size=6&apikey=${TICKETMASTER_API_KEY}`);
+    const tmData = await tmResponse.json();
+
+    if (tmData._embedded && tmData._embedded.events) {
+      const tmEvents = tmData._embedded.events.map((event, index) => {
+        const venue = event._embedded?.venues?.[0];
+        let basePrice = 85; // Fallback
+        if (event.priceRanges && event.priceRanges.length > 0) {
+          basePrice = event.priceRanges[0].min || event.priceRanges[0].max;
+        }
+
+        const teams = event.name.split(" vs ");
+        const homeTeam = teams[0] || event.name;
+        const awayTeam = teams[1] || "Away Team";
+
+        let region = "world";
+        const countryCode = venue?.country?.countryCode || "";
+        if (countryCode === "GB" || countryCode === "UK") region = "uk";
+        else if (["ES", "FR", "IT", "DE", "PT", "NL"].includes(countryCode)) region = "europe";
+
+        return {
+          id: `tm_${event.id}`,
+          source: 'Ticketmaster',
+          buy_url: event.url,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          league: event.classifications?.[0]?.genre?.name || "Sporting Event",
+          date: event.dates?.start?.dateTime || event.dates?.start?.localDate,
+          stadium: venue?.name || "TBA",
+          location: `${venue?.city?.name || ''}, ${venue?.country?.name || ''}`.trim().replace(/^,/, ''),
+          price: basePrice,
+          currency: event.priceRanges?.[0]?.currency === 'USD' ? '$' : (event.priceRanges?.[0]?.currency === 'EUR' ? '€' : '£'),
+          region: region,
+          demand: "High", // Ticketmaster API doesn't give clear demand stats, default to high
+          color: teamColors[(index + 3) % teamColors.length], // offset colors
+        };
+      });
+      allEvents.push(...tmEvents);
+    }
+  } catch (err) {
+    console.error("Failed to fetch from Ticketmaster API:", err);
+  }
+
+  // 3. Fallback or Final Assignment
+  if (allEvents.length > 0) {
+    // Shuffle the combined array for a dynamic feel
+    for (let i = allEvents.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allEvents[i], allEvents[j]] = [allEvents[j], allEvents[i]];
+    }
+    // Make the first one featured
+    allEvents[0].featured = true;
+    matches = allEvents;
+  } else {
+    // Fallback data if BOTH APIs fail (403 Forbidden / Rate Limit)
+    console.warn("Using fallback mock data because public APIs failed.");
     matches = [
-      { id: "fallback-1", seatgeek_url: "#", homeTeam: "Real Madrid", awayTeam: "Barcelona", league: "La Liga", date: "2026-04-15T20:00:00", stadium: "Santiago Bernabéu", location: "Madrid, Spain", price: 250, currency: "€", region: "europe", demand: "Extremely High", color: teamColors[0], featured: true },
-      { id: "fallback-2", seatgeek_url: "#", homeTeam: "Arsenal", awayTeam: "Chelsea", league: "Premier League", date: "2026-03-22T16:30:00", stadium: "Emirates Stadium", location: "London, UK", price: 150, currency: "£", region: "uk", demand: "High", color: teamColors[1] },
-      { id: "fallback-3", seatgeek_url: "#", homeTeam: "Inter Miami", awayTeam: "LA Galaxy", league: "MLS", date: "2026-05-10T19:00:00", stadium: "DRV PNK Stadium", location: "Miami, USA", price: 180, currency: "$", region: "world", demand: "Very High", color: teamColors[2] },
-      { id: "fallback-4", seatgeek_url: "#", homeTeam: "Bayern Munich", awayTeam: "Dortmund", league: "Bundesliga", date: "2026-04-05T18:30:00", stadium: "Allianz Arena", location: "Munich, Germany", price: 120, currency: "€", region: "europe", demand: "High", color: teamColors[3] }
+      { id: "fallback-1", source: "AlphaGrab Hub", buy_url: "#", homeTeam: "Real Madrid", awayTeam: "Barcelona", league: "La Liga", date: "2026-04-15T20:00:00", stadium: "Santiago Bernabéu", location: "Madrid, Spain", price: 250, currency: "€", region: "europe", demand: "Extremely High", color: teamColors[0], featured: true },
+      { id: "fallback-2", source: "AlphaGrab Hub", buy_url: "#", homeTeam: "Arsenal", awayTeam: "Chelsea", league: "Premier League", date: "2026-03-22T16:30:00", stadium: "Emirates Stadium", location: "London, UK", price: 150, currency: "£", region: "uk", demand: "High", color: teamColors[1] },
+      { id: "fallback-3", source: "SeatGeek", buy_url: "#", homeTeam: "Inter Miami", awayTeam: "LA Galaxy", league: "MLS", date: "2026-05-10T19:00:00", stadium: "DRV PNK Stadium", location: "Miami, USA", price: 180, currency: "$", region: "world", demand: "Very High", color: teamColors[2] },
+      { id: "fallback-4", source: "Ticketmaster", buy_url: "#", homeTeam: "Bayern Munich", awayTeam: "Dortmund", league: "Bundesliga", date: "2026-04-05T18:30:00", stadium: "Allianz Arena", location: "Munich, Germany", price: 120, currency: "€", region: "europe", demand: "High", color: teamColors[3] }
     ];
   }
 }
@@ -323,7 +379,7 @@ function renderFeaturedMatch() {
                     ${generateSparkline(featured.priceHistory)}
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                  <button class="btn btn-primary" style="flex: 2;" onclick="window.open('${featured.seatgeek_url}', '_blank')">Buy on SeatGeek</button>
+                  <button class="btn btn-primary" style="flex: 2;" onclick="window.open('${featured.buy_url}', '_blank')">Buy on ${featured.source}</button>
                   <button class="btn btn-secondary track-price-btn" style="flex: 1;" data-id="${featured.id}"><i class="fa-regular fa-bell"></i> Track</button>
                 </div>
             </div>
@@ -381,7 +437,7 @@ function renderMatches() {
                 </div>
                 ${generateSparkline(match.priceHistory)}
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                  <button class="btn btn-secondary" style="flex: 2;" onclick="window.open('${match.seatgeek_url}', '_blank')">View Seats</button>
+                  <button class="btn btn-secondary" style="flex: 2;" onclick="window.open('${match.buy_url}', '_blank')">Buy on ${match.source}</button>
                   <button class="btn btn-secondary track-price-btn" style="flex: 1; padding: 0;" data-id="${match.id}" title="Track Price"><i class="fa-regular fa-bell"></i></button>
                 </div>
             </div>
